@@ -29,13 +29,25 @@ resource "aws_ecs_task_definition" "url-shortener" {
   container_definitions = jsonencode([
     {
       name      = "url-shortener"
-      image     = var.container-image
+      image     = "754056705747.dkr.ecr.eu-west-2.amazonaws.com/url-shortener:v2"
       cpu       = 256
       memory    = 512
       essential = true
       portMappings = [{
         containerPort = 8080
       hostPort = 8080 }]
+
+      environment = [
+        {
+          name = "TABLE_NAME"
+          value = "url-dynamodb"
+        
+        },
+        {
+          name = "AWS_DEFUALT_REGION"
+          value = "eu-west-2"
+        }
+      ]
 
       logConfiguration = {
         logDriver = "awslogs"
@@ -120,11 +132,7 @@ resource "aws_iam_role_policy" "dynamodb_policy" {
       Effect = "Allow"
       Action = [
         "dynamodb:PutItem",
-        "dynamodb:GetItem",
-        "dynamodb:Query",
-        "dynamodb:Scan",
-        "dynamodb:UpdateItem",
-        "dynamodb:DeleteItem"
+        "dynamodb:GetItem"
       ]
       Resource = var.dynamodb_table_arn
     }]

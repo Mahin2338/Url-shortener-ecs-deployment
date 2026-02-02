@@ -1,17 +1,47 @@
-### Example Dockerfile - i don't want to see copy and paste of this pls. Make your own and make sure it works. Make sure it's light, secure and instructions to run are there. 
+# Base Image - Build: python/slim-buster:fewer packages
+FROM python:3.9.13-slim-buster AS builder
 
-# FROM python:3.12-slim AS build
-# WORKDIR /w
-# COPY requirements.txt .
-# RUN pip install --prefix=/out -r requirements.txt
-# COPY src/ ./src
+# Working directory
+WORKDIR /app
 
-# FROM gcr.io/distroless/python3-debian12
-# ENV PYTHONPATH=/app \
-#     TABLE_NAME=changeme
-# WORKDIR /app
-# COPY --from=build /out /usr/local
-# COPY --from=build /w/src /app
-# USER 65532:65532
-# EXPOSE 8080
-# CMD ["-m", "uvicorn", "main:app", "--host=0.0.0.0", "--port=8080"]
+# Copy dependencies from req
+COPY requirements.txt .
+
+# venv=python environment for dependencies needed in second build
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:#PATH"
+
+# install them
+RUN pip install --no-cache-dir -r requirements.txt
+
+
+# Second Stage: excludes cache 
+FROM python:3.9.13-slim-buster
+
+WORKDIR /app
+
+# non root user
+RUN groupadd --system app && useradd --system --gid app --create-home app
+
+# copies dependencies from build stage using the venv
+COPY --from=builder /opt/venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+
+#copy files from local to /app
+COPY . .
+
+ENV TABLE_NAME=url-shortener \
+    AWS_DEFAULT_REGION=eu-west-2
+
+# non root user can still read+write app files 
+RUN chown -R app:app /app
+
+# runtime to non root
+USER app
+
+# port - doc only
+EXPOSE 8080
+
+# run time command
+CMD [ "python3", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8080" ]

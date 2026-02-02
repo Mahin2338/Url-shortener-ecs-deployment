@@ -1,6 +1,6 @@
-variable "container-image" {
-  type = string
-}
+#variable "container-image" {
+ #type = string
+#}
 
 variable "private_subnet_ids" {
   type = list(string)

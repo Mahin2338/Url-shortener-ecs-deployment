@@ -17,6 +17,11 @@ protocol    = "HTTP"
 target_type = "ip"
 vpc_id      = var.vpc_id
 
+
+lifecycle {
+  create_before_destroy = true
+}
+
 health_check {
 enabled             = true
 healthy_threshold   = 2
